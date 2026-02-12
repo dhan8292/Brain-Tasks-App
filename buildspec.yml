@@ -3,17 +3,17 @@ version: 0.2
 env:
   variables:
     AWS_ACCOUNT_ID: 281089586720
-    AWS_DEFAULT_REGION: ap-south-1        # Change to your region
-    IMAGE_REPO_NAME: brain-react-app     # Your ECR repository name
-    IMAGE_TAG: latest                    # Can also use $CODEBUILD_RESOLVED_SOURCE_VERSION
-    EKS_CLUSTER_NAME: brain-cluster      # Your EKS cluster name
+    AWS_DEFAULT_REGION: ap-south-1
+    IMAGE_REPO_NAME: brain-react-app
+    IMAGE_TAG: latest
+    EKS_CLUSTER_NAME: brain-cluster
 
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - REPOSITORY_URI= $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
       - echo "Repository URI: $REPOSITORY_URI"
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
 
@@ -38,5 +38,4 @@ phases:
 artifacts:
   files:
     - '**/*'
-
 
