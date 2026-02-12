@@ -2,44 +2,41 @@ version: 0.2
 
 env:
   variables:
-    ACCOUNT_ID: 281089586720
-    AWS_DEFAULT_REGION: ap-south-1
-    IMAGE_REPO_NAME: brain-react-app
-    IMAGE_TAG: latest
+    AWS_ACCOUNT_ID: 281089586720
+    AWS_DEFAULT_REGION: ap-south-1        # Change to your region
+    IMAGE_REPO_NAME: brain-react-app     # Your ECR repository name
+    IMAGE_TAG: latest                    # Can also use $CODEBUILD_RESOLVED_SOURCE_VERSION
+    EKS_CLUSTER_NAME: brain-cluster      # Your EKS cluster name
 
 phases:
-  install:
-    commands:
-      - echo Installing kubectl...
-      - curl -o kubectl https://amazon-eks.s3.ap-south-1.amazonaws.com/1.29.0/2024-01-04/bin/linux/amd64/kubectl
-      - chmod +x kubectl
-      - mv kubectl /usr/local/bin/
-
   pre_build:
     commands:
-      pre_build:
-  commands:
-    - echo Logging in to Amazon ECR...
-    - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-    - echo Account ID: $ACCOUNT_ID
-    - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
-    - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - echo Logging in to Amazon ECR...
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - echo "Repository URI: $REPOSITORY_URI"
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
 
   build:
     commands:
-      - echo Building Docker image...
-      - docker build -t $IMAGE_URI .
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
 
   post_build:
     commands:
-      - echo Pushing image to ECR...
-      - docker push $IMAGE_URI
-      - echo Updating kubeconfig...
-      - aws eks update-kubeconfig --region ap-south-1 --name brain-eks-cluster
+      - echo Pushing the Docker image...
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Updating kubeconfig for EKS...
+      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
       - echo Deploying to EKS...
-      - kubectl apply -f k8s/
+      - kubectl apply -f k8s/deployment.yml
+      - kubectl apply -f k8s/service.yml
+      - echo Deployment completed!
 
 artifacts:
   files:
     - '**/*'
+
 
