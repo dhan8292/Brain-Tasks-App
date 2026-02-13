@@ -18,19 +18,21 @@ phases:
 
   pre_build:
     commands:
-      - echo "Configuring kubectl..."
-      - aws eks update-kubeconfig --region ap-south-1 --name brain-cluster
-      - kubectl version --client
-      - kubectl get nodes 
-      - echo "Logging into Amazon ECR..."
-      - aws --version
-      - docker --version
-      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - ECR_URL=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - REPO_URI=$ECR_URL/$IMAGE_REPO_NAME
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL
-      - echo "Updating kubeconfig..."
-      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
+      -pre_build:
+  commands:
+    - echo "Configuring kubectl..."
+    - aws sts get-caller-identity
+    - aws eks describe-cluster --region ap-south-1 --brain-cluster
+    - aws eks update-kubeconfig --region ap-south-1 --name brain-cluster
+    - kubectl auth can-i get nodes
+    - kubectl get nodes
+    - echo "Logging into Amazon ECR..."
+    - docker --version
+    - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    - ECR_URL=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+    - REPO_URI=$ECR_URL/$IMAGE_REPO_NAME
+    - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL
+    
 
   build:
     commands:
