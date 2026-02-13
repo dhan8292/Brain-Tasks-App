@@ -36,6 +36,9 @@ phases:
 
   post_build:
     commands:
+      - echo "Logging in to Amazon ECR..."
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL
       - echo "Pushing Docker image to ECR..."
       - docker push $REPO_URI:$IMAGE_TAG
       - echo "Deploying to EKS..."
