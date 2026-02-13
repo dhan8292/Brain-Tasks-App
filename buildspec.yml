@@ -18,6 +18,10 @@ phases:
 
   pre_build:
     commands:
+      - echo "Configuring kubectl..."
+      - aws eks update-kubeconfig --region ap-south-1 --name brain-cluster
+      - kubectl version --client
+      - kubectl get nodes 
       - echo "Logging into Amazon ECR..."
       - aws --version
       - docker --version
