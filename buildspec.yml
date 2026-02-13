@@ -19,9 +19,6 @@ phases:
 
   pre_build:
     commands:
-
-      pre_build:
-    commands:
       - echo "Logging in to Amazon ECR..."
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - ECR_URL=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
