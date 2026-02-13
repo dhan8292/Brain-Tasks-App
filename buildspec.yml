@@ -3,34 +3,48 @@ version: 0.2
 env:
   variables:
     AWS_ACCOUNT_ID: 281089586720
-    IMAGE_REPO_NAME: brain-react-app
-    AWS_DEFAULT_REGION: ap-south-1
-    IMAGE_TAG: latest
-    EKS_CLUSTER_NAME: brain-cluster
+    IMAGE_REPO_NAME: "brain-react-app"
+    AWS_DEFAULT_REGION: "ap-south-1"
+    IMAGE_TAG: "latest"
+    EKS_CLUSTER_NAME: "brain-cluster"
 
 phases:
+  install:
+    commands:
+      - echo "Updating AWS CLI and installing kubectl..."
+      - pip install --upgrade awscli
+      # Ensure kubectl is available in the build environment
+      - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - chmod +x kubectl
+      - mv kubectl /usr/local/bin/
+
   pre_build:
     commands:
-      - echo "Logging in to Amazon ECR..."
+      - echo "Step 1: Checking IAM Identity..."
+      - aws sts get-caller-identity
       - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - "REPO_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME; echo Repository URI: $REPO_URI"
-      - LOGIN_CMD="aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URI"
+      
+      - echo "Step 2: Logging in to Amazon ECR..."
+      - LOGIN_CMD"aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URI"
       - eval $LOGIN_CMD
+      
+      - echo "Step 3: Updating kubeconfig (The common failure point)..."
+      # Using --verbose helps debug if it hits another 254
+      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
 
   build:
     commands:
-      - echo "Build started on `date`"
+      - echo "Build started on $(date)"
       - echo "Building Docker image..."
-      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
-      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPO_URI:$IMAGE_TAG
+      - docker build -t $REPO_URI:$IMAGE_TAG .
 
   post_build:
     commands:
       - echo "Pushing Docker image to ECR..."
       - docker push $REPO_URI:$IMAGE_TAG
-      - echo "Updating kubeconfig for EKS..."
-      - aws eks update-kubeconfig --region ap-south-1 --name brain-cluster
       - echo "Deploying to EKS..."
+      # Use --validate=false only if you have custom YAML schemas that kubectl doesn't recognize
       - kubectl apply -f k8s/deployment.yml
       - kubectl apply -f k8s/service.yml
       - echo "Deployment completed successfully!"
@@ -38,4 +52,6 @@ phases:
 artifacts:
   files:
     - '**/*'
+  
+
 
