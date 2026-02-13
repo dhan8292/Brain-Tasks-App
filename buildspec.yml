@@ -29,7 +29,7 @@ phases:
       - echo "Pushing Docker image to ECR..."
       - docker push $REPO_URI:$IMAGE_TAG
       - echo "Updating kubeconfig for EKS..."
-      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
+      - aws eks update-kubeconfig --region ap-south-1 --name brain-cluster
       - echo "Deploying to EKS..."
       - kubectl apply -f k8s/deployment.yml
       - kubectl apply -f k8s/service.yml
