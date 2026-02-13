@@ -40,6 +40,7 @@ phases:
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL
       - echo "Pushing Docker image to ECR..."
+      - echo "docker images"
       - docker push $REPO_URI:$IMAGE_TAG
       - echo "Deploying to EKS..."
       # Use --validate=false only if you have custom YAML schemas that kubectl doesn't recognize
