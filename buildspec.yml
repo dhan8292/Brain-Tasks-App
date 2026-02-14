@@ -12,7 +12,6 @@ phases:
   install:
     commands:
       - echo "Updating AWS CLI and installing kubectl..."
-      # Ensure kubectl is available in the build environment
       - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       - chmod +x kubectl
       - mv kubectl /usr/local/bin/
@@ -27,22 +26,17 @@ phases:
       - echo "Updating kubeconfig..."
       - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
 
-    build:
+  build:   # ✅ FIXED (correct level)
     commands:
       - echo "Build started on $(date)"
-      - echo "Building Docker image..." 
+      - echo "Building Docker image..."
       - docker build -t $REPO_URI:$IMAGE_TAG .
 
   post_build:
     commands:
-      - echo "Logging in to Amazon ECR..."
-      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL
       - echo "Pushing Docker image to ECR..."
-      - echo "docker images"
       - docker push $REPO_URI:$IMAGE_TAG
       - echo "Deploying to EKS..."
-      # Use --validate=false only if you have custom YAML schemas that kubectl doesn't recognize
       - kubectl apply -f k8s/deployment.yml
       - kubectl apply -f k8s/service.yml
       - echo "Deployment completed successfully!"
@@ -50,4 +44,5 @@ phases:
 artifacts:
   files:
     - '**/*'
+
  
