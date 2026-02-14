@@ -2,6 +2,7 @@ version: 0.2
 
 env:
   variables:
+    # Use colons (:) for assignment in buildspec.yml, NOT equals (=)
     AWS_ACCOUNT_ID: "281089586720"
     IMAGE_REPO_NAME: "brain-react-app"
     AWS_DEFAULT_REGION: "ap-south-1"
@@ -11,33 +12,39 @@ env:
 phases:
   install:
     commands:
-      - echo "Updating AWS CLI and installing kubectl..."
-      - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - echo "Installing kubectl..."
+      - curl -LO "https://dl.k8s.io(curl -L -s https://dl.k8s.io)/bin/linux/amd64/kubectl"
       - chmod +x kubectl
       - mv kubectl /usr/local/bin/
 
   pre_build:
     commands:
       - echo "Logging in to Amazon ECR..."
-      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - ECR_URL=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - REPO_URI=$ECR_URL/$IMAGE_REPO_NAME
+      # Define variables that need to persist across phases
+      - ECR_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      - REPO_URI="${ECR_URL}/${IMAGE_REPO_NAME}"
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL
-      - echo "Logging in to Amazon EKS..."
-      - echo "Updating kubeconfig..." 
-      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME 
+      
+      - echo "Updating kubeconfig for EKS..."
+      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
+      
+      # We export these so they are definitely available in the 'build' and 'post_build' shell sessions
+      - export ECR_URL=$ECR_URL
+      - export REPO_URI=$REPO_URI
 
-  build:   # ✅ FIXED (correct level)
+  build:
     commands:
       - echo "Build started on $(date)"
-      - echo "Building Docker image..."
+      - echo "Building Docker image: $REPO_URI:$IMAGE_TAG"
       - docker build -t $REPO_URI:$IMAGE_TAG .
 
   post_build:
     commands:
       - echo "Pushing Docker image to ECR..."
       - docker push $REPO_URI:$IMAGE_TAG
+      
       - echo "Deploying to EKS..."
+      # Using --validate=false as requested, but ensure your k8s folder exists in the root
       - kubectl apply -f k8s/deployment.yml --validate=false
       - kubectl apply -f k8s/service.yml --validate=false
       - echo "Deployment completed successfully!"
@@ -46,4 +53,3 @@ artifacts:
   files:
     - '**/*'
 
- 
