@@ -9,6 +9,14 @@ env:
     KUBE_NAMESPACE: "default"
 
 phases:
+  install:
+    commands:
+      - echo "Installing kubectl..."
+      - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - chmod +x ./kubectl
+      - mv ./kubectl /usr/local/bin/kubectl
+      - kubectl version --client
+
   pre_build:
     commands:
       - echo "Logging in to Amazon ECR..."
@@ -36,8 +44,12 @@ phases:
       - echo "Waiting for rollout..."
       - kubectl rollout status deployment/brain-react-app -n $KUBE_NAMESPACE --timeout=5m
       - echo "Deployment successful!"
+      - echo "Pipeline completed" > deployment.txt
 
 artifacts:
   files:
-    - README.md
+    - deployment.txt
   name: BuildOutput
+
+
+
