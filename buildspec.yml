@@ -8,10 +8,7 @@ env:
     IMAGE_TAG: "latest"
     CLUSTER_NAME: "brain-cluster"
     KUBE_NAMESPACE: "default"
-  parameter-store:
-    # Optional: If you store sensitive data in Parameter Store
-    # DOCKER_USERNAME: /codebuild/docker/username
-    # DOCKER_PASSWORD: /codebuild/docker/password
+
 
 phases:
   install:
