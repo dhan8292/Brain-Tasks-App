@@ -4,9 +4,10 @@ env:
   variables:
     AWS_ACCOUNT_ID: "281089586720"
     IMAGE_REPO_NAME: "brain-react-app"
-    AWS_DEFAULT_REGION: "ap-south-1"
+    AWS_REGION: "ap-south-1"
     IMAGE_TAG: "latest"
-    EKS_CLUSTER_NAME: "brain-cluster"
+    CLUSTER_NAME: "brain-cluster"
+    KUBE_NAMESPACE: "default"
 
 phases:
   install:
@@ -20,12 +21,14 @@ phases:
   pre_build:
     commands:
       - echo "Logging in to Amazon ECR..."
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - ECR_REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - ECR_REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
-      - echo "Updating kubeconfig..."
-      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
+      - echo "Updating kubeconfig for EKS cluster..."
+      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME --kubeconfig $HOME/.kube/config
+      - mkdir -p $HOME/.kube
+      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
   build:
     commands:
@@ -40,14 +43,18 @@ phases:
       - echo "Pushing the Docker image..."
       - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
       - docker push $ECR_REPOSITORY_URI:latest
-      - echo "Updating Kubernetes deployment..."
-      - kubectl set image deployment/brain-react-app brain-react-app=$ECR_REPOSITORY_URI:$IMAGE_TAG --record -n default
-      - kubectl rollout status deployment/brain-react-app -n default
+      - echo "Verifying kubectl access..."
+      - kubectl cluster-info
+      - echo "Applying Kubernetes manifests..."
+      - kubectl apply -f k8s/deployment.yml -n $KUBE_NAMESPACE
+      - kubectl apply -f k8s/service.yml -n $KUBE_NAMESPACE
+      - echo "Waiting for deployment to be ready..."
+      - kubectl rollout status deployment/brain-react-app -n $KUBE_NAMESPACE --timeout=5m
       - echo "Deployment completed successfully!"
 
 artifacts:
   files:
-    - imagedefinitions.json
+    - '**/*'
   name: BuildArtifact
 
 cache:
