@@ -8,6 +8,10 @@ env:
     IMAGE_TAG: "latest"
     CLUSTER_NAME: "brain-cluster"
     KUBE_NAMESPACE: "default"
+  parameter-store:
+    # Optional: If you store sensitive data in Parameter Store
+    # DOCKER_USERNAME: /codebuild/docker/username
+    # DOCKER_PASSWORD: /codebuild/docker/password
 
 phases:
   install:
@@ -17,18 +21,31 @@ phases:
       - chmod +x ./kubectl
       - mv ./kubectl /usr/local/bin/kubectl
       - kubectl version --client
+      - echo "Installing AWS IAM Authenticator..."
+      - curl -Lo aws-iam-authenticator https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.6.0/aws-iam-authenticator_0.6.0_linux_amd64
+      - chmod +x ./aws-iam-authenticator
+      - mv ./aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
 
   pre_build:
     commands:
+      - echo "Setting up environment variables..."
+      - export ECR_REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - export COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - export IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "ECR_REPOSITORY_URI=$ECR_REPOSITORY_URI"
+      - echo "IMAGE_TAG=$IMAGE_TAG"
+      - echo ""
       - echo "Logging in to Amazon ECR..."
-      - ECR_REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest}
-      - echo "Updating kubeconfig for EKS cluster..."
-      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME --kubeconfig $HOME/.kube/config
+      - echo ""
+      - echo "Setting up kubeconfig for EKS cluster..."
       - mkdir -p $HOME/.kube
-      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME --kubeconfig $HOME/.kube/config
+      - echo ""
+      - echo "Verifying kubeconfig and kubectl access..."
+      - kubectl cluster-info
+      - kubectl get nodes
+      - echo "kubeconfig setup completed successfully!"
 
   build:
     commands:
@@ -36,18 +53,20 @@ phases:
       - echo "Building Docker image..."
       - docker build -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
       - docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
+      - echo "Docker build completed successfully!"
 
   post_build:
     commands:
       - echo "Build completed on $(date)"
-      - echo "Pushing the Docker image..."
+      - echo "Pushing Docker images to ECR..."
       - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
       - docker push $ECR_REPOSITORY_URI:latest
-      - echo "Verifying kubectl access..."
-      - kubectl cluster-info
-      - echo "Applying Kubernetes manifests..."
+      - echo "Docker push completed successfully!"
+      - echo ""
+      - echo "Deploying to EKS cluster..."
       - kubectl apply -f k8s/deployment.yml -n $KUBE_NAMESPACE
       - kubectl apply -f k8s/service.yml -n $KUBE_NAMESPACE
+      - echo ""
       - echo "Waiting for deployment to be ready..."
       - kubectl rollout status deployment/brain-react-app -n $KUBE_NAMESPACE --timeout=5m
       - echo "Deployment completed successfully!"
@@ -60,5 +79,5 @@ artifacts:
 cache:
   paths:
     - '/root/.docker/**/*'
-
+    - '/root/.kube/**/*'
 
