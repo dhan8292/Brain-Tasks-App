@@ -9,3 +9,7 @@ dist
 .env
 .env.local
 .DS_Store
+*.log
+.env
+k8s
+build-output
