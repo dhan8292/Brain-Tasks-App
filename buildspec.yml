@@ -10,12 +10,13 @@ env:
 
 phases:
   install:
+    runtime-versions:
+      nodejs: 18  # Explicitly setting a runtime can help stabilize the environment
     commands:
       - echo "Installing kubectl..."
       - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       - chmod +x ./kubectl
       - mv ./kubectl /usr/local/bin/kubectl
-      - kubectl version --client
 
   pre_build:
     commands:
@@ -41,20 +42,16 @@ phases:
       - echo "Deploying to EKS..."
       - kubectl apply -f k8s/deployment.yml -n $KUBE_NAMESPACE
       - kubectl apply -f k8s/service.yml -n $KUBE_NAMESPACE
-      - echo "Waiting for rollout..."
       - kubectl rollout status deployment/brain-react-app -n $KUBE_NAMESPACE --timeout=5m
-      - echo "Deployment successful!"
       - mkdir -p build-output
       - echo "Pipeline completed" > build-output/deployment.txt
 
 artifacts:
   files:
-    - build-output/deployment.txt
-  name: BuildOutput
-  
+    - 'build-output/deployment.txt'
+
 cache:
   paths:
-    - '/root/.npm/**/*'
-    - '/root/.m2/**/*'
+    - 'node_modules/**/*' # Caches only the local project modules, NOT the whole system root
 
 
