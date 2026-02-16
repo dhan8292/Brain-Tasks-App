@@ -42,12 +42,8 @@ phases:
       - kubectl apply -f k8s/service.yml -n $KUBE_NAMESPACE
       - kubectl rollout status deployment/brain-react-app -n $KUBE_NAMESPACE --timeout=5m
       - mkdir -p build-output
-      - echo "Pipeline completed" > build-output/deployment.txt
+      - echo "Pipeline completed" > build-output/deployment.txt  # Add success indicator
 
 artifacts:
   files:
     - 'build-output/deployment.txt'
-
-cache:
-  paths:
-    - '.m2/**/*'  # Since your image is Java-based, we keep the Maven cache but use a relative path
