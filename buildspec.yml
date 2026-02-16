@@ -32,6 +32,7 @@ phases:
 
   post_build:
     commands:
+      - export CODEBUILD_CONFIG_AUTO_DISCOVER=false  # Disables report scanning immediately
       - echo "Pushing to ECR..."
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - docker push $REPOSITORY_URI:latest
