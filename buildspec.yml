@@ -10,8 +10,6 @@ env:
 
 phases:
   install:
-    runtime-versions:
-      nodejs: 18  # Explicitly setting a runtime can help stabilize the environment
     commands:
       - echo "Installing kubectl..."
       - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -52,6 +50,4 @@ artifacts:
 
 cache:
   paths:
-    - 'node_modules/**/*' # Caches only the local project modules, NOT the whole system root
-
-
+    - '.m2/**/*'  # Since your image is Java-based, we keep the Maven cache but use a relative path
