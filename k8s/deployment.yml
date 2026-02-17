@@ -16,7 +16,7 @@ spec:
       - name: brain-react-app
         image: 281089586720.dkr.ecr.ap-south-1.amazonaws.com/brain-react-app:latest
         ports:
-        - containerPort: 3000
+        - containerPort: 80
         resources:
           requests:
             cpu: "100m"
