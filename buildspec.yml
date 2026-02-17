@@ -39,7 +39,7 @@ phases:
       - echo "Updating kubeconfig..."
       - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
       - echo "Deploying to EKS..."
-      - kubectl apply -f k8s/deployment.yml -n $KUBE_NAMESPACE --validate=false
+      - kubectl apply -f k8s/deployment.yml -n $KUBE_NAMESPACE
       - kubectl apply -f k8s/service.yml -n $KUBE_NAMESPACE 
       - kubectl rollout status deployment/brain-react-app -n $KUBE_NAMESPACE --timeout=5m
       - mkdir -p build-output
