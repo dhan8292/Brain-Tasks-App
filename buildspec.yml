@@ -48,5 +48,4 @@ phases:
       - echo "Pipeline completed successfully" > build-output/deployment.txt # Add success indicator
 
   artifacts:
-  files:
-    - build-output/deployment.txt
+   - build-output/deployment.txt
