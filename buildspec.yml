@@ -32,15 +32,16 @@ phases:
 
   post_build:
     commands:
-      - export CODEBUILD_CONFIG_AUTO_DISCOVER=false  # Disables report scanning immediately
-      - echo "Pushing to ECR..."
+      - export CODEBUILD_CONFIG_AUTO_DISCOVER=false
+      - echo "Pushing Docker images to ECR..."
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - docker push $REPOSITORY_URI:latest
       - echo "Updating kubeconfig..."
       - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
       - echo "Deploying to EKS..."
       - kubectl apply -f k8s/deployment.yml -n $KUBE_NAMESPACE --validate=false
-      - kubectl apply -f k8s/service.yml -n $KUBE_NAMESPACE 
+      - kubectl apply -f k8s/service.yml -n $KUBE_NAMESPACE
       - kubectl rollout status deployment/brain-react-app -n $KUBE_NAMESPACE --timeout=5m
       - mkdir -p build-output
-      - echo "Pipeline completed" > build-output/deployment.txt  # Add success indicator
+      - echo "Pipeline completed successfully" > build-output/deployment.txt # Add success indicator
+
