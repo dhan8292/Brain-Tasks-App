@@ -46,6 +46,3 @@ phases:
       - kubectl rollout status deployment/brain-react-app -n $KUBE_NAMESPACE --timeout=5m
       - mkdir -p build-output
       - echo "Pipeline completed successfully" > build-output/deployment.txt # Add success indicator
-
-  artifacts:
-   - build-output/deployment.txt
