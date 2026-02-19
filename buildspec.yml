@@ -48,5 +48,5 @@ phases:
       - echo "Pipeline completed successfully" > build-output/deployment.txt # Add success indicator
 
   artifacts:
-     - echo "Directly uploading to S3..."
-      - aws s3 cp build-output/deployment.txt s3://ad-p1-bucket/artifacts /
+  files:
+    - build-output/deployment.txt
