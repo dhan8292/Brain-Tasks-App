@@ -375,7 +375,9 @@ export PWD="/codebuild/output/src680770877/src/codestar-connections.ap-south-1.a
 export SHLVL="4"
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 55.8M  100 55.8M    0     0   362M      0 --:--:-- --:--:-- --:--:--  362M
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 55.8M  100 55.8M    0     0   362M      0 --:--:-- --:--:-- --:--:--  362M
 
 [Container] 2026/02/19 19:19:46.701535 Running command chmod +x ./kubectl
 export $ACCOUNT_ID
