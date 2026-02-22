@@ -68,3 +68,147 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+End-to-End DevOps Deployment Documentation
+Project: Brain-Tasks-App Deployment on AWS EKS using CI/CD
+1. Application Overview
+Repository: https://github.com/Vennilavan12/Brain-Tasks-App.git
+This project demonstrates complete DevOps lifecycle for deploying a React application into a
+production-ready Kubernetes cluster using AWS services.
+Key Goals:
+- Containerize application
+- Push image to ECR
+- Deploy to AWS EKS
+- Build CI/CD using CodePipeline and CodeBuild
+- Monitor logs using CloudWatch
+2. Clone the Repository
+git clone https://github.com/Vennilavan12/Brain-Tasks-App.git
+cd Brain-Tasks-App
+Install dependencies:
+npm install
+Run application locally:
+npm start
+Access via: http://localhost:3000
+3. Dockerization
+Create Dockerfile:
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+RUN npm install -g serve
+CMD ["serve", "-s", "build", "-l", "3000"]
+EXPOSE 3000
+Build Image:
+docker build -t brain-tasks-app:latest .
+Run Container:
+docker run -d -p 3000:3000 brain-tasks-app:latest
+4. AWS ECR Setup
+Create ECR Repository:
+aws ecr create-repository --repository-name brain-tasks-app
+Login:
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin
+.dkr.ecr.us-east-1.amazonaws.com
+Tag and Push:
+docker tag brain-tasks-app:latest :latest
+docker push :latest
+5. EKS Cluster Setup
+Create Cluster using eksctl:
+eksctl create cluster --name brain-cluster --region us-east-1
+Configure kubeconfig:
+aws eks update-kubeconfig --region us-east-1 --name brain-cluster
+Verify:
+kubectl get nodes
+6. Kubernetes Deployment
+deployment.yaml:
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+name: brain-tasks
+spec:
+replicas: 2
+selector:
+matchLabels:
+app: brain-tasks
+template:
+metadata:
+labels:
+app: brain-tasks
+spec:
+containers:
+- name: brain-tasks
+image:
+ports:
+- containerPort: 3000
+service.yaml:
+apiVersion: v1
+kind: Service
+metadata:
+name: brain-tasks-service
+spec:
+type: LoadBalancer
+selector:
+app: brain-tasks
+ports:
+- protocol: TCP
+port: 80
+targetPort: 3000
+Apply:
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+7. CodeBuild Setup
+Create buildspec.yml:
+version: 0.2
+phases:
+pre_build:
+commands:
+- aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin
+build:
+commands:
+- docker build -t brain-tasks-app .
+- docker tag brain-tasks-app:latest :latest
+post_build:
+commands:
+- docker push :latest
+8. AppSpec for Deployment
+Create appspec.yml:
+version: 0.0
+Resources:
+- TargetService:
+Type: AWS::EKS::Service
+Properties:
+TaskDefinition: deployment.yaml
+9. Git Version Control
+git init
+git remote add origin https://github.com/yourusername/brain-tasks-app.git
+git add .
+git commit -m "Initial deployment pipeline"
+git push -u origin main
+10. CodePipeline Setup
+Stages:
+- Source: GitHub
+- Build: AWS CodeBuild
+- Deploy: EKS using kubectl or Lambda
+Automated end-to-end CI/CD pipeline.
+11. Monitoring
+Enable CloudWatch Logs for:
+- CodeBuild logs
+- CodePipeline logs
+- EKS container logs
+kubectl logs
+aws logs describe-log-groups
+12. Final Output
+Application accessible using LoadBalancer URL on port 80.
+kubectl get svc brain-tasks-service
+
+
+
+
+
+
+
+
+
+
+
