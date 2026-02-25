@@ -1,12 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: brain-react-service
+  name: brain-app-svc
 spec:
   type: LoadBalancer
   selector:
     app: brain-react-app
   ports:
-  - port: 80
-    targetPort: 80
-    protocol: TCP
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+    
