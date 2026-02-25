@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Configuring kubectl...
+      - aws eks update-kubeconfig --region ap-south-1 --name brain-cluster
+
+  build:
+    commands:
+      - kubectl apply -f k8s/deployment.yaml
+      - kubectl apply -f k8s/service.yaml
+
+  post_build:
+    commands:
+      - kubectl rollout status deployment/brain-app
