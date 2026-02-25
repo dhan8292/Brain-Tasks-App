@@ -1,49 +1,31 @@
-version: 0.2
+ version: 0.2
 
-env:
-  variables:
-    AWS_ACCOUNT_ID: "190460274475"
-    IMAGE_REPO_NAME: "brain-app"
-    AWS_REGION: "ap-south-1"
-    EKS_CLUSTER_NAME: "brain-cluster"
-    KUBE_NAMESPACE: "default"
 
-phases:
-  install:
-    commands:
-      - echo "Installing kubectl..."
-      - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-      - chmod +x ./kubectl
-      - mv ./kubectl /usr/local/bin/kubectl
-
-  pre_build:
-    commands:
-      - echo "Logging in to Amazon ECR..."
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-      - echo "Updating kubeconfig for $EKS_CLUSTER_NAME in $AWS_REGION..."
-      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION 
-      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest
-
+  env:
+    variables:
+      AWS_DEFAULT_REGION: ap-south-1
+      IMAGE_REPO_NAME: brain-app IMAGE_TAG: latest
+ phases:
+ pre_build:
+ commands:
+  – echo Logging in to Amazon ECR...
+  - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 190460274475.dkr.ecr.ap-south-1.amazonaws.com/brain-app
   build:
-    commands:
-      - echo "Building Docker image..."
-      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
-      - docker tag $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:latest
+  commands:
+   - echo Build started on 'date'
+   - echo Building the Docker image.....
+   - docker build -t $IMAGE_REPO_NAME: $IMAGE_TAG .
+   - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG 190460274475.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME: $IMAGE_TAG
+ post_build: 
+  commands:
+ - echo Build completed on 'date'
+ - echo Pushing Docker image...
+ - docker push 190460274475.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME: $IMAGE_TAG
+ - echo Writing image definitions file...
+ - printf '[{"name":"brain-app-container","imageUri":"%s"}]' 190460274475.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME: $IMAGE_TAG > i magedefinitions.json
 
-  post_build:
-    commands:
-      - export CODEBUILD_CONFIG_AUTO_DISCOVER=false
-      - echo "Pushing Docker images to ECR..."
-      - export CODEBUILD_CONFIG_AUTO_DISCOVER=false  # Disables report scanning immediately
-      - echo "Pushing to ECR..."
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - docker push $REPOSITORY_URI:latest
-      - echo "Updating kubeconfig..."
-      - echo "Deploying to EKS..."
-      - kubectl apply -f k8s/deployment.yml -n $KUBE_NAMESPACE --validate=false
-      - kubectl apply -f k8s/service.yml -n $KUBE_NAMESPACE
-      - kubectl rollout status deployment/brain-app -n $KUBE_NAMESPACE --timeout=5m
-      - mkdir -p build-output
-      - echo "Pipeline completed successfully" > build-output/deployment.txt # Add success indicator
+artifacts:
+files:
+ - imagedefinitions.json
+ - deployment.yaml
+ - service.yaml
