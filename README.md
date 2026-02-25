@@ -101,7 +101,7 @@ RUN npm install -g serve
 CMD ["serve", "-s", "build", "-l", "3000"]
 EXPOSE 3000
 Build Image:
-docker build -t brain-tasks-app:latest .
+docker build -t brain-task :latest .
 Run Container:
 docker run -d -p 3000:3000 brain-tasks-app:latest
 4. AWS ECR Setup
@@ -115,9 +115,9 @@ docker tag brain-tasks-app:latest :latest
 docker push :latest
 5. EKS Cluster Setup
 Create Cluster using eksctl:
-eksctl create cluster --name brain-cluster --region us-east-1
+eksctl create cluster --name brain-cluster --region ap-south-1
 Configure kubeconfig:
-aws eks update-kubeconfig --region us-east-1 --name brain-cluster
+aws eks update-kubeconfig --region ap-south-1 --name brain-cluster
 Verify:
 kubectl get nodes
 6. Kubernetes Deployment
@@ -125,19 +125,19 @@ deployment.yaml:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-name: brain-tasks
+name: brain-app
 spec:
 replicas: 2
 selector:
 matchLabels:
-app: brain-tasks
+app: brain-app
 template:
 metadata:
 labels:
-app: brain-tasks
+app: brain-app
 spec:
 containers:
-- name: brain-tasks
+- name: brain-app
 image:
 ports:
 - containerPort: 3000
@@ -153,7 +153,7 @@ app: brain-tasks
 ports:
 - protocol: TCP
 port: 80
-targetPort: 3000
+targetPort: 8080
 Apply:
 kubectl apply -f deployment.yaml
 kubectl apply -f service.yaml
@@ -166,7 +166,7 @@ commands:
 - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin
 build:
 commands:
-- docker build -t brain-tasks-app .
+- docker build -t brain-app .
 - docker tag brain-tasks-app:latest :latest
 post_build:
 commands:
@@ -181,7 +181,7 @@ Properties:
 TaskDefinition: deployment.yaml
 9. Git Version Control
 git init
-git remote add origin https://github.com/yourusername/brain-tasks-app.git
+git remote add origin 
 git add .
 git commit -m "Initial deployment pipeline"
 git push -u origin main
@@ -200,8 +200,9 @@ kubectl logs
 aws logs describe-log-groups
 12. Final Output
 Application accessible using LoadBalancer URL on port 80.
-kubectl get svc brain-tasks-service
-
+kubectl get svc
+LoadBalancerURL : http://a7d72c016477d4c2aaf281cb783f6f95-125436209.ap-south-1.elb.amazonaws.com/
+NOTE : The Above created LoadBalancer is Created By AWS CLI EKS Using CloudFormation Stack and It is A Classic LoadBalncer The AWS Resource "ARN" :should be BLANK (EMPTY)
 
 
 
