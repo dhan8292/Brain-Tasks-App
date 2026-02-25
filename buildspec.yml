@@ -2,8 +2,8 @@ version: 0.2
 
 env:
   variables:
-    AWS_ACCOUNT_ID: "281089586720"
-    IMAGE_REPO_NAME: "brain-react-app"
+    AWS_ACCOUNT_ID: "190460274475"
+    IMAGE_REPO_NAME: "brain-app"
     AWS_REGION: "ap-south-1"
     CLUSTER_NAME: "brain-cluster"
     KUBE_NAMESPACE: "default"
