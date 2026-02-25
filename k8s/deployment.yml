@@ -13,7 +13,7 @@ spec:
         app: brain-app
     spec:
       containers:
-      - name: brain-app
+      - name: brain-app-container
         image: 190460274475.dkr.ecr.ap-south-1.amazonaws.com/brain-app:latest
         ports:
         - containerPort: 80
