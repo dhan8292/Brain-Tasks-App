@@ -20,9 +20,11 @@ phases:
     commands:
       - echo "Logging in to Amazon ECR..."
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - echo "Updating kubeconfig for $EKS_CLUSTER_NAME in $AWS_REGION..."
+      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION 
       - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - IMAGE_TAG=${COMMIT_HASH:=latest
 
   build:
     commands:
@@ -39,10 +41,9 @@ phases:
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - docker push $REPOSITORY_URI:latest
       - echo "Updating kubeconfig..."
-      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
       - echo "Deploying to EKS..."
       - kubectl apply -f k8s/deployment.yml -n $KUBE_NAMESPACE --validate=false
       - kubectl apply -f k8s/service.yml -n $KUBE_NAMESPACE
-      - kubectl rollout status deployment/brain-react-app -n $KUBE_NAMESPACE --timeout=5m
+      - kubectl rollout status deployment/brain-app -n $KUBE_NAMESPACE --timeout=5m
       - mkdir -p build-output
       - echo "Pipeline completed successfully" > build-output/deployment.txt # Add success indicator
